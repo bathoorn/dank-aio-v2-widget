@@ -162,6 +162,86 @@ Column {
         visible: (daemon?.btAdapters?.length ?? 0) === 0
     }
 
+    StyledText {
+        text: "Board"
+        font.pixelSize: Theme.fontSizeSmall
+        font.weight: Font.Medium
+        color: Theme.surfaceVariantText
+    }
+
+    Rectangle {
+        width: parent.width
+        height: 48
+        color: "transparent"
+
+        Row {
+            anchors.fill: parent
+            anchors.rightMargin: 76
+            spacing: Theme.spacingS
+
+            DankIcon {
+                name: "schedule"
+                size: Theme.iconSize - 4
+                color: Theme.surfaceVariantText
+                anchors.verticalCenter: parent.verticalCenter
+            }
+
+            Column {
+                anchors.verticalCenter: parent.verticalCenter
+                spacing: 1
+                width: parent.width - (Theme.iconSize - 4) - Theme.spacingS
+
+                StyledText {
+                    text: "Hardware clock (RTC)"
+                    font.pixelSize: Theme.fontSizeMedium
+                    color: Theme.surfaceText
+                    width: parent.width
+                    elide: Text.ElideRight
+                }
+
+                StyledText {
+                    text: (daemon?.rtcSyncStatus ?? "") !== "" ? daemon.rtcSyncStatus : "Write system time to the board RTC"
+                    font.pixelSize: Theme.fontSizeSmall
+                    color: Theme.surfaceVariantText
+                    width: parent.width
+                    elide: Text.ElideRight
+                }
+            }
+        }
+
+        Rectangle {
+            width: 64
+            height: 28
+            radius: Theme.cornerRadius
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            color: rtcMouseArea.containsMouse ? Theme.withAlpha(Theme.primary, 0.8) : Theme.primary
+
+            StyledText {
+                anchors.centerIn: parent
+                text: "Sync"
+                font.pixelSize: Theme.fontSizeSmall
+                font.weight: Font.Medium
+                color: Theme.surface
+            }
+
+            DankRipple {
+                id: rtcRipple
+                rippleColor: Theme.surface
+                cornerRadius: parent.radius
+            }
+
+            MouseArea {
+                id: rtcMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                onPressed: mouse => rtcRipple.trigger(mouse.x, mouse.y)
+                onClicked: daemon && daemon.syncRtc()
+            }
+        }
+    }
+
     Rectangle {
         width: parent.width
         height: 40

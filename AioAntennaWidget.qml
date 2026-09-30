@@ -49,6 +49,10 @@ PluginComponent {
     readonly property int activeFeatureCount: (gpsOn ? 1 : 0) + (loraOn ? 1 : 0) + (sdrOn ? 1 : 0) + (usbOn ? 1 : 0) + (anyWifiUp ? 1 : 0) + (anyBtUp ? 1 : 0)
     readonly property int totalFeatureCount: 6
 
+    // The AIO v2 also carries a hardware RTC. Syncing it is a one-shot
+    // action (like aiov2_ctl's --sync-rtc), not a persistent toggle.
+    property string rtcSyncStatus: ""
+
     function pinLine(output, pin) {
         var re = new RegExp("^\\s*" + pin + ":.*$", "m");
         var match = re.exec(output);
@@ -129,6 +133,23 @@ PluginComponent {
         id: btToggleProcess
         onExited: function(exitCode, exitStatus) {
             refreshBluetoothStatus();
+        }
+    }
+
+    Process {
+        id: rtcSyncProcess
+        stdout: StdioCollector {}
+        stderr: StdioCollector {}
+
+        onExited: function(exitCode, exitStatus) {
+            if (exitCode === 0) {
+                root.rtcSyncStatus = "Synced just now";
+                ToastService.showInfo("RTC synced", "Hardware clock updated to system time");
+            } else {
+                var err = String(rtcSyncProcess.stderr.text || "").trim();
+                root.rtcSyncStatus = "Sync failed";
+                ToastService.showError("RTC sync failed", err !== "" ? err : "pkexec/hwclock unavailable or permission denied");
+            }
         }
     }
 
@@ -215,6 +236,17 @@ PluginComponent {
         setBluetoothAdapterState(index, !currentlyUp);
     }
 
+    function syncRtc() {
+        var lines = [];
+        lines.push("if command -v pkexec >/dev/null 2>&1; then");
+        lines.push("  pkexec hwclock -w");
+        lines.push("else");
+        lines.push("  hwclock -w");
+        lines.push("fi");
+        rtcSyncProcess.command = ["sh", "-c", lines.join("\n")];
+        rtcSyncProcess.running = true;
+    }
+
     function checkPinctrl() {
         whichProcess.command = ["sh", "-c", "command -v " + root.pinctrlPath];
         whichProcess.running = true;
@@ -283,7 +315,7 @@ PluginComponent {
     }
 
     popoutWidth: 320
-    popoutHeight: 560
+    popoutHeight: 620
 
     popoutContent: Component {
         PopoutComponent {

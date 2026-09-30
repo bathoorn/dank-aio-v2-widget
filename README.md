@@ -4,9 +4,9 @@ A [DankMaterialShell](https://github.com/AvengeMedia/DankMaterialShell) bar
 plugin for the ClockworkPi uConsole running with a
 [Hackergadgets AIO v2](https://hackergadgets.com/products/uconsole-aio-v2)
 expansion board. Adds a DankBar pill with a popout to enable/disable the
-board's GPS, LoRa, SDR, and internal-USB power rails, plus the wifi and
-Bluetooth radios on a [Hackergadgets AC1200 USB-C module](https://hackergadgets.com/)
-plugged into that internal USB header.
+board's GPS, LoRa, SDR, and internal-USB power rails, the wifi and Bluetooth
+radios on a [Hackergadgets AC1200 USB-C module](https://hackergadgets.com/)
+plugged into that internal USB header, and sync the board's hardware RTC.
 
 ## Preview
 
@@ -43,11 +43,15 @@ they weren't confirmed against the physical hardware.
 
 Hackergadgets also publish an official control tool,
 [`aiov2_ctl`](https://github.com/hackergadgets/aiov2_ctl), which wraps the
-same `pinctrl` calls plus persistent boot-rail state and power monitoring.
-This widget talks to `pinctrl` directly to keep the dependency surface small
-and the status parsing predictable; swapping the backend to shell out to
-`aiov2_ctl` instead (for its boot-persistence and power-draw readouts) would
-be a reasonable follow-up.
+same `pinctrl` calls (confirmed identical GPIO_MAP: GPS=27, LORA=16, SDR=7,
+USB=23) plus persistent boot-rail state, LoRa/Meshtastic service coupling,
+and power monitoring. This widget talks to `pinctrl`/`iw`/`rfkill`/`hwclock`
+directly instead of wrapping `aiov2_ctl`, to keep the dependency surface
+small and not require it to be installed.
+
+Deliberately **not** implemented: boot-time rail persistence (`aiov2_ctl
+--boot-rail`). Every rail starts off after a reboot and you turn on what you
+need — simpler, and nothing here needs to survive a power cycle unattended.
 
 ### Permissions
 
@@ -80,6 +84,20 @@ This only flips the radio on/off; it doesn't manage pairing or connections.
 A `Hard blocked` adapter (a physical kill switch, not applicable on this
 board) can't be re-enabled from software, so its row is shown but disabled.
 
+### RTC sync
+
+The AIO v2 also carries a hardware RTC. The "Board" section has a one-shot
+"Sync" button that writes the current system time to it via `hwclock -w`
+(same operation as `aiov2_ctl --sync-rtc`) — only useful after system time is
+already correct (e.g. via NTP), so the RTC can keep time across power-offs
+when there's no network to re-sync from on boot.
+
+`hwclock -w` needs root. The widget runs `pkexec hwclock -w` if `pkexec` is
+on PATH (pops a normal polkit auth prompt), otherwise falls back to a bare
+`hwclock -w` which will just fail with a permission error if you have
+neither `pkexec` nor passwordless access — the failure reason shows up in
+both a toast and the row's status line.
+
 ## Install
 
 ```sh
@@ -108,10 +126,13 @@ USB-C wifi module in there and flip this on. Once it powers up and enumerates
 (may take a couple seconds), its wifi interfaces should appear as separate
 rows below; flipping "Internal USB" off cuts power to the whole module.
 
+The "Board" section's "Sync" button writes system time to the hardware RTC —
+see [RTC sync](#rtc-sync) above.
+
 ## Files
 
 - `plugin.json` — plugin manifest
-- `AioAntennaWidget.qml` — bar pill + GPIO/wifi/Bluetooth control and polling logic
+- `AioAntennaWidget.qml` — bar pill + GPIO/wifi/Bluetooth/RTC control and polling logic
 - `AioAntennaPanel.qml` — popout contents
 - `AioAntennaRow.qml` — reusable toggle row
 - `AioAntennaSettings.qml` — refresh interval / pinctrl path / ignored-wifi settings
