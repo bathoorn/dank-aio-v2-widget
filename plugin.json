@@ -1,0 +1,14 @@
+{
+  "id": "aioAntennaControl",
+  "name": "AIO Antenna Control",
+  "description": "Toggle the uConsole Hackergadgets AIO v2 GPS, LoRa, and SDR power rails from the DankBar",
+  "version": "1.0.0",
+  "author": "b",
+  "icon": "settings_input_antenna",
+  "type": "widget",
+  "capabilities": ["dankbar-widget"],
+  "component": "./AioAntennaWidget.qml",
+  "settings": "./AioAntennaSettings.qml",
+  "permissions": ["settings_read", "settings_write", "process"],
+  "dependencies": ["pinctrl", "iw", "iproute2", "rfkill"]
+}
