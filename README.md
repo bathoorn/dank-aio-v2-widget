@@ -8,6 +8,13 @@ board's GPS, LoRa, SDR, and internal-USB power rails, plus the wifi and
 Bluetooth radios on a [Hackergadgets AC1200 USB-C module](https://hackergadgets.com/)
 plugged into that internal USB header.
 
+## Preview
+
+<img src="docs/panel-mockup.svg" alt="Mockup of the bar pill and popout panel, showing GPS, LoRa, SDR, internal USB, wifi, and Bluetooth toggle rows" width="340">
+
+This is a hand-drawn mockup of the expected layout, not a screenshot — it
+hasn't been run against real DankMaterialShell/hardware yet.
+
 ## How it works
 
 The AIO v2 gates GPS/LoRa/SDR/internal-USB power behind GPIO lines that are
