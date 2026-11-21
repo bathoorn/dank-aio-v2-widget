@@ -138,7 +138,7 @@ Panel {
 
   function refreshStatus() {
     if (!root.pinctrlAvailable) return
-    var cmd = [root.pinctrlPath, "get", root.gpsPin, root.loraPin, root.sdrPin, root.usbPin].join(" ")
+    var cmd = root.pinctrlPath + " get " + [root.gpsPin, root.loraPin, root.sdrPin, root.usbPin].join(",")
     statusProcess.command = ["sh", "-c", cmd]
     statusProcess.running = true
   }
@@ -237,170 +237,193 @@ Panel {
     }
   }
 
+  // Laid out for the uConsole's short landscape screen: toggles sit two to a
+  // row, wifi and Bluetooth share one "Radios" grid, and RTC sync shares the
+  // bottom row with "All off". If it still doesn't fit (many interfaces),
+  // the card caps at screen height and the content scrolls.
   KeyboardPanel {
     id: popup
     anchorItem: button
     owner: root
     bar: root.bar
     open: root.opened
-    contentWidth: popup.fittedContentWidth(Style.space(300))
+    contentWidth: popup.fittedContentWidth(Style.space(520))
     contentHeight: popup.fittedContentHeight(column.implicitHeight)
 
-    Column {
-      id: column
+    Flickable {
+      id: scroller
       anchors.fill: parent
-      spacing: Style.spacing.panelGap
+      contentWidth: width
+      contentHeight: column.implicitHeight
+      clip: true
+      boundsBehavior: Flickable.StopAtBounds
+      interactive: contentHeight > height
 
-      PanelHero {
-        width: parent.width
-        title: "AIO v2 antennas"
-        meta: root.pinctrlAvailable ? "" : "pinctrl not found"
-        detail: root.activeFeatureCount + "/" + root.totalFeatureCount
-        iconComponent: Component {
-          Text {
-            textFormat: Text.PlainText
-            text: root.antennaIcon
-            font.family: Style.font.family
-            font.pixelSize: Style.font.display
-            color: root.activeFeatureCount > 0 ? Commons.Color.accent : Commons.Color.foreground
-          }
-        }
-      }
+      Column {
+        id: column
+        width: scroller.width
+        spacing: Style.spacing.panelGap
 
-      PanelSeparator { width: parent.width }
+        readonly property real cellWidth: (width - Style.spacing.panelGap) / 2
 
-      Toggle {
-        width: parent.width
-        label: "GPS"
-        description: "GPIO" + root.gpsPin + (root.pinctrlAvailable ? "" : " — unavailable")
-        checked: root.gpsOn
-        enabled: root.pinctrlAvailable
-        opacity: root.pinctrlAvailable ? 1.0 : 0.5
-        onClicked: root.toggleGps()
-      }
-
-      Toggle {
-        width: parent.width
-        label: "LoRa"
-        description: "GPIO" + root.loraPin
-        checked: root.loraOn
-        enabled: root.pinctrlAvailable
-        opacity: root.pinctrlAvailable ? 1.0 : 0.5
-        onClicked: root.toggleLora()
-      }
-
-      Toggle {
-        width: parent.width
-        label: "SDR"
-        description: "GPIO" + root.sdrPin
-        checked: root.sdrOn
-        enabled: root.pinctrlAvailable
-        opacity: root.pinctrlAvailable ? 1.0 : 0.5
-        onClicked: root.toggleSdr()
-      }
-
-      Toggle {
-        width: parent.width
-        label: "Internal USB"
-        description: "GPIO" + root.usbPin
-        checked: root.usbOn
-        enabled: root.pinctrlAvailable
-        opacity: root.pinctrlAvailable ? 1.0 : 0.5
-        onClicked: root.toggleUsb()
-      }
-
-      PanelSeparator { width: parent.width; visible: root.wifiInterfaces.length > 0 }
-
-      PanelSectionHeader {
-        text: "Wifi (AC1200)"
-        visible: root.wifiInterfaces.length > 0
-      }
-
-      Repeater {
-        model: root.wifiInterfaces
-
-        Toggle {
-          width: column.width
-          label: modelData.name
-          description: modelData.up
-            ? (modelData.connected ? "Connected: " + modelData.ssid : "Up, not connected")
-            : "Down"
-          checked: modelData.up
-          onClicked: root.toggleWifiInterface(modelData.name, modelData.up)
-        }
-      }
-
-      PanelSeparator { width: parent.width; visible: root.btAdapters.length > 0 }
-
-      PanelSectionHeader {
-        text: "Bluetooth (AC1200)"
-        visible: root.btAdapters.length > 0
-      }
-
-      Repeater {
-        model: root.btAdapters
-
-        Toggle {
-          readonly property bool btEnabled: !modelData.softBlocked && !modelData.hardBlocked
-
-          width: column.width
-          label: modelData.name
-          description: modelData.hardBlocked ? "Hardware blocked" : (btEnabled ? "Enabled" : "Disabled")
-          checked: btEnabled
-          enabled: !modelData.hardBlocked
-          onClicked: root.toggleBluetoothAdapter(modelData.index, btEnabled)
-        }
-      }
-
-      PanelSeparator { width: parent.width }
-
-      PanelSectionHeader { text: "Board" }
-
-      Row {
-        width: parent.width
-        spacing: Style.spacing.rowPaddingX
-
-        Column {
-          width: parent.width - syncButton.width - parent.spacing
-          spacing: Style.spacing.xs
-
-          Text {
-            textFormat: Text.PlainText
-            text: "Hardware clock (RTC)"
-            color: Commons.Color.foreground
-            font.family: Style.font.family
-            font.pixelSize: Style.font.subtitle
-            font.bold: true
-          }
-
-          Text {
-            textFormat: Text.PlainText
-            text: root.rtcSyncStatus !== "" ? root.rtcSyncStatus : "Write system time to the board RTC"
-            color: Qt.darker(Commons.Color.foreground, 1.5)
-            font.family: Style.font.family
-            font.pixelSize: Style.font.caption
-            elide: Text.ElideRight
-            width: parent.width
+        PanelHero {
+          width: parent.width
+          title: "AIO v2 antennas"
+          meta: root.pinctrlAvailable ? "" : "pinctrl not found"
+          detail: root.activeFeatureCount + "/" + root.totalFeatureCount
+          iconComponent: Component {
+            Text {
+              textFormat: Text.PlainText
+              text: root.antennaIcon
+              font.family: Style.font.family
+              font.pixelSize: Style.font.display
+              color: root.activeFeatureCount > 0 ? Commons.Color.accent : Commons.Color.foreground
+            }
           }
         }
 
-        Button {
-          id: syncButton
-          text: "Sync"
-          bordered: true
-          onClicked: root.syncRtc()
-        }
-      }
+        PanelSeparator { width: parent.width }
 
-      Button {
-        width: parent.width
-        text: "All off"
-        iconText: root.powerIcon
-        bordered: true
-        foreground: Commons.Color.urgent
-        enabled: root.pinctrlAvailable
-        opacity: root.pinctrlAvailable ? 1.0 : 0.5
-        onClicked: root.allOff()
+        Grid {
+          width: parent.width
+          columns: 2
+          columnSpacing: Style.spacing.panelGap
+          rowSpacing: Style.spacing.panelGap
+
+          Toggle {
+            width: column.cellWidth
+            label: "GPS"
+            description: "GPIO" + root.gpsPin + (root.pinctrlAvailable ? "" : " — unavailable")
+            checked: root.gpsOn
+            enabled: root.pinctrlAvailable
+            opacity: root.pinctrlAvailable ? 1.0 : 0.5
+            onClicked: root.toggleGps()
+          }
+
+          Toggle {
+            width: column.cellWidth
+            label: "LoRa"
+            description: "GPIO" + root.loraPin
+            checked: root.loraOn
+            enabled: root.pinctrlAvailable
+            opacity: root.pinctrlAvailable ? 1.0 : 0.5
+            onClicked: root.toggleLora()
+          }
+
+          Toggle {
+            width: column.cellWidth
+            label: "SDR"
+            description: "GPIO" + root.sdrPin
+            checked: root.sdrOn
+            enabled: root.pinctrlAvailable
+            opacity: root.pinctrlAvailable ? 1.0 : 0.5
+            onClicked: root.toggleSdr()
+          }
+
+          Toggle {
+            width: column.cellWidth
+            label: "Internal USB"
+            description: "GPIO" + root.usbPin
+            checked: root.usbOn
+            enabled: root.pinctrlAvailable
+            opacity: root.pinctrlAvailable ? 1.0 : 0.5
+            onClicked: root.toggleUsb()
+          }
+        }
+
+        PanelSectionHeader {
+          text: "Radios (AC1200)"
+          visible: root.wifiInterfaces.length + root.btAdapters.length > 0
+        }
+
+        Grid {
+          width: parent.width
+          columns: 2
+          columnSpacing: Style.spacing.panelGap
+          rowSpacing: Style.spacing.panelGap
+          visible: root.wifiInterfaces.length + root.btAdapters.length > 0
+
+          Repeater {
+            model: root.wifiInterfaces
+
+            Toggle {
+              width: column.cellWidth
+              label: "Wifi " + modelData.name
+              description: modelData.up
+                ? (modelData.connected ? modelData.ssid : "Not connected")
+                : "Down"
+              checked: modelData.up
+              onClicked: root.toggleWifiInterface(modelData.name, modelData.up)
+            }
+          }
+
+          Repeater {
+            model: root.btAdapters
+
+            Toggle {
+              readonly property bool btEnabled: !modelData.softBlocked && !modelData.hardBlocked
+
+              width: column.cellWidth
+              label: "BT " + modelData.name
+              description: modelData.hardBlocked ? "Hardware blocked" : (btEnabled ? "Enabled" : "Disabled")
+              checked: btEnabled
+              enabled: !modelData.hardBlocked
+              onClicked: root.toggleBluetoothAdapter(modelData.index, btEnabled)
+            }
+          }
+        }
+
+        PanelSeparator { width: parent.width }
+
+        Row {
+          width: parent.width
+          spacing: Style.spacing.rowPaddingX
+
+          Column {
+            width: parent.width - syncButton.width - allOffButton.width - parent.spacing * 2
+            anchors.verticalCenter: parent.verticalCenter
+            spacing: Style.spacing.xs
+
+            Text {
+              textFormat: Text.PlainText
+              text: "Board RTC"
+              color: Commons.Color.foreground
+              font.family: Style.font.family
+              font.pixelSize: Style.font.subtitle
+              font.bold: true
+            }
+
+            Text {
+              textFormat: Text.PlainText
+              text: root.rtcSyncStatus !== "" ? root.rtcSyncStatus : "Write system time to the RTC"
+              color: Qt.darker(Commons.Color.foreground, 1.5)
+              font.family: Style.font.family
+              font.pixelSize: Style.font.caption
+              elide: Text.ElideRight
+              width: parent.width
+            }
+          }
+
+          Button {
+            id: syncButton
+            anchors.verticalCenter: parent.verticalCenter
+            text: "Sync"
+            bordered: true
+            onClicked: root.syncRtc()
+          }
+
+          Button {
+            id: allOffButton
+            anchors.verticalCenter: parent.verticalCenter
+            text: "All off"
+            iconText: root.powerIcon
+            bordered: true
+            foreground: Commons.Color.urgent
+            enabled: root.pinctrlAvailable
+            opacity: root.pinctrlAvailable ? 1.0 : 0.5
+            onClicked: root.allOff()
+          }
+        }
       }
     }
   }

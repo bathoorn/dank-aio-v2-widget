@@ -254,7 +254,7 @@ PluginComponent {
 
     function refreshStatus() {
         if (!root.pinctrlAvailable) return;
-        var cmd = [root.pinctrlPath, "get", root.gpsPin, root.loraPin, root.sdrPin, root.usbPin].join(" ");
+        var cmd = root.pinctrlPath + " get " + [root.gpsPin, root.loraPin, root.sdrPin, root.usbPin].join(",");
         statusProcess.command = ["sh", "-c", cmd];
         statusProcess.running = true;
     }
