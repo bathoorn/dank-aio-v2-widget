@@ -100,10 +100,19 @@ both a toast and the row's status line.
 
 ## Install
 
+The actual DankMaterialShell plugin lives under [`dank/`](dank/) (`docs/` and
+this README sit alongside it, outside the plugin). Clone the repo, then
+symlink the `dank/` folder into DMS's plugins directory under whatever name
+you want it to show up as:
+
 ```sh
-git clone <this-repo> ~/.config/DankMaterialShell/plugins/aioAntennaControl
+git clone <this-repo> ~/src/dank-aio-v2-widget
+ln -s ~/src/dank-aio-v2-widget/dank ~/.config/DankMaterialShell/plugins/aioAntennaControl
 dms restart
 ```
+
+The symlink means a `git pull` in `~/src/dank-aio-v2-widget` picks up updates
+without having to re-copy anything.
 
 Then in DankMaterialShell: **Settings → Plugins → Scan for Plugins** → enable
 "AIO Antenna Control" → **Settings → DankBar → Add widget** → pick it.
@@ -131,8 +140,9 @@ see [RTC sync](#rtc-sync) above.
 
 ## Files
 
-- `plugin.json` — plugin manifest
-- `AioAntennaWidget.qml` — bar pill + GPIO/wifi/Bluetooth/RTC control and polling logic
-- `AioAntennaPanel.qml` — popout contents
-- `AioAntennaRow.qml` — reusable toggle row
-- `AioAntennaSettings.qml` — refresh interval / pinctrl path / ignored-wifi settings
+- `dank/plugin.json` — plugin manifest
+- `dank/AioAntennaWidget.qml` — bar pill + GPIO/wifi/Bluetooth/RTC control and polling logic
+- `dank/AioAntennaPanel.qml` — popout contents
+- `dank/AioAntennaRow.qml` — reusable toggle row
+- `dank/AioAntennaSettings.qml` — refresh interval / pinctrl path / ignored-wifi settings
+- `docs/panel-mockup.svg` — mockup used in the Preview section above
