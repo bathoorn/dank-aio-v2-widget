@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "aioAntennaControl",
+  "name": "AIO Antenna Control",
+  "version": "1.0.0",
+  "author": "b",
+  "description": "Control the uConsole Hackergadgets AIO v2 board: GPS/LoRa/SDR/USB power rails, AC1200 wifi/Bluetooth, and RTC sync",
+  "kinds": ["bar-widget"],
+  "entryPoints": { "barWidget": "Widget.qml" },
+  "barWidget": {
+    "displayName": "AIO Antenna Control",
+    "description": "GPS/LoRa/SDR/USB power rails, AC1200 wifi/Bluetooth, and RTC sync",
+    "category": "Network",
+    "allowMultiple": false,
+    "defaults": {
+      "refreshInterval": 5,
+      "pinctrlPath": "pinctrl",
+      "ignoredWifiInterfaces": ""
+    },
+    "schema": [
+      { "key": "refreshInterval", "type": "number", "label": "Status refresh interval (seconds)" },
+      { "key": "pinctrlPath", "type": "string", "label": "pinctrl executable" },
+      { "key": "ignoredWifiInterfaces", "type": "string", "label": "Wifi interfaces to ignore (comma-separated)" }
+    ]
+  }
+}
