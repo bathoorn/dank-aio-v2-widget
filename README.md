@@ -15,7 +15,7 @@ differs to match each shell's own look and feel.
 
 ## Preview
 
-<img src="docs/panel-mockup.svg" alt="Mockup of the bar pill and popout panel, showing GPS, LoRa, SDR, internal USB, wifi, and Bluetooth toggle rows" width="340">
+<img src="docs/panel-mockup.svg" alt="Mockup of the bar pill and popout panel, showing GPS, LoRa, SDR, internal USB, wifi, and Bluetooth toggles two to a row" width="560">
 
 This is a hand-drawn mockup of the `dank/` layout, not a screenshot — it
 hasn't been run against real DankMaterialShell/hardware. The `omarchy/`

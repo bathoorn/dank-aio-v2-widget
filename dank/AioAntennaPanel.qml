@@ -41,12 +41,18 @@ Column {
         }
     }
 
-    Column {
+    // Two to a row so the popout fits the uConsole's short landscape screen.
+    Grid {
+        id: gpioGrid
         width: parent.width
-        spacing: 2
+        columns: 2
+        columnSpacing: Theme.spacingS
+        rowSpacing: 2
+
+        readonly property real cellWidth: (width - columnSpacing) / 2
 
         AioAntennaRow {
-            width: parent.width
+            width: gpioGrid.cellWidth
             iconName: "satellite_alt"
             label: "GPS"
             pinLabel: "GPIO" + (daemon?.gpsPin ?? "")
@@ -56,7 +62,7 @@ Column {
         }
 
         AioAntennaRow {
-            width: parent.width
+            width: gpioGrid.cellWidth
             iconName: "sensors"
             label: "LoRa"
             pinLabel: "GPIO" + (daemon?.loraPin ?? "")
@@ -66,7 +72,7 @@ Column {
         }
 
         AioAntennaRow {
-            width: parent.width
+            width: gpioGrid.cellWidth
             iconName: "radio"
             label: "SDR"
             pinLabel: "GPIO" + (daemon?.sdrPin ?? "")
@@ -76,7 +82,7 @@ Column {
         }
 
         AioAntennaRow {
-            width: parent.width
+            width: gpioGrid.cellWidth
             iconName: "usb"
             label: "Internal USB"
             pinLabel: "GPIO" + (daemon?.usbPin ?? "")
@@ -87,54 +93,38 @@ Column {
     }
 
     StyledText {
-        text: "Wifi (AC1200)"
+        readonly property bool hasRadios: (daemon?.wifiInterfaces?.length ?? 0) + (daemon?.btAdapters?.length ?? 0) > 0
+        text: hasRadios ? "Radios (AC1200)" : "No AC1200 radios detected"
         font.pixelSize: Theme.fontSizeSmall
-        font.weight: Font.Medium
+        font.weight: hasRadios ? Font.Medium : Font.Normal
         color: Theme.surfaceVariantText
-        visible: (daemon?.wifiInterfaces?.length ?? 0) > 0
     }
 
-    Column {
+    Grid {
+        id: radioGrid
         width: parent.width
-        spacing: 2
-        visible: (daemon?.wifiInterfaces?.length ?? 0) > 0
+        columns: 2
+        columnSpacing: Theme.spacingS
+        rowSpacing: 2
+        visible: (daemon?.wifiInterfaces?.length ?? 0) + (daemon?.btAdapters?.length ?? 0) > 0
+
+        readonly property real cellWidth: (width - columnSpacing) / 2
 
         Repeater {
             model: daemon?.wifiInterfaces ?? []
 
             AioAntennaRow {
-                width: parent.width
+                width: radioGrid.cellWidth
                 iconName: modelData.up ? "wifi" : "wifi_off"
-                label: modelData.name
+                label: "Wifi " + modelData.name
                 statusText: modelData.up
-                    ? (modelData.connected ? "Connected: " + modelData.ssid : "Up, not connected")
+                    ? (modelData.connected ? modelData.ssid : "Not connected")
                     : "Down"
                 active: modelData.up
                 enabled: true
                 onToggled: daemon && daemon.toggleWifiInterface(modelData.name, modelData.up)
             }
         }
-    }
-
-    StyledText {
-        text: "No wifi adapter detected"
-        font.pixelSize: Theme.fontSizeSmall
-        color: Theme.surfaceVariantText
-        visible: (daemon?.wifiInterfaces?.length ?? 0) === 0
-    }
-
-    StyledText {
-        text: "Bluetooth (AC1200)"
-        font.pixelSize: Theme.fontSizeSmall
-        font.weight: Font.Medium
-        color: Theme.surfaceVariantText
-        visible: (daemon?.btAdapters?.length ?? 0) > 0
-    }
-
-    Column {
-        width: parent.width
-        spacing: 2
-        visible: (daemon?.btAdapters?.length ?? 0) > 0
 
         Repeater {
             model: daemon?.btAdapters ?? []
@@ -142,9 +132,9 @@ Column {
             AioAntennaRow {
                 readonly property bool btEnabled: !modelData.softBlocked && !modelData.hardBlocked
 
-                width: parent.width
+                width: radioGrid.cellWidth
                 iconName: btEnabled ? "bluetooth" : "bluetooth_disabled"
-                label: modelData.name
+                label: "BT " + modelData.name
                 statusText: modelData.hardBlocked
                     ? "Hardware blocked"
                     : (btEnabled ? "Enabled" : "Disabled")
@@ -155,20 +145,7 @@ Column {
         }
     }
 
-    StyledText {
-        text: "No Bluetooth adapter detected"
-        font.pixelSize: Theme.fontSizeSmall
-        color: Theme.surfaceVariantText
-        visible: (daemon?.btAdapters?.length ?? 0) === 0
-    }
-
-    StyledText {
-        text: "Board"
-        font.pixelSize: Theme.fontSizeSmall
-        font.weight: Font.Medium
-        color: Theme.surfaceVariantText
-    }
-
+    // Board RTC sync and All Off share the bottom row.
     Rectangle {
         width: parent.width
         height: 48
@@ -176,7 +153,7 @@ Column {
 
         Row {
             anchors.fill: parent
-            anchors.rightMargin: 76
+            anchors.rightMargin: 64 + 96 + Theme.spacingS * 2
             spacing: Theme.spacingS
 
             DankIcon {
@@ -192,7 +169,7 @@ Column {
                 width: parent.width - (Theme.iconSize - 4) - Theme.spacingS
 
                 StyledText {
-                    text: "Hardware clock (RTC)"
+                    text: "Board RTC"
                     font.pixelSize: Theme.fontSizeMedium
                     color: Theme.surfaceText
                     width: parent.width
@@ -200,7 +177,7 @@ Column {
                 }
 
                 StyledText {
-                    text: (daemon?.rtcSyncStatus ?? "") !== "" ? daemon.rtcSyncStatus : "Write system time to the board RTC"
+                    text: (daemon?.rtcSyncStatus ?? "") !== "" ? daemon.rtcSyncStatus : "Write system time to the RTC"
                     font.pixelSize: Theme.fontSizeSmall
                     color: Theme.surfaceVariantText
                     width: parent.width
@@ -213,7 +190,8 @@ Column {
             width: 64
             height: 28
             radius: Theme.cornerRadius
-            anchors.right: parent.right
+            anchors.right: allOffButton.left
+            anchors.rightMargin: Theme.spacingS
             anchors.verticalCenter: parent.verticalCenter
             color: rtcMouseArea.containsMouse ? Theme.withAlpha(Theme.primary, 0.8) : Theme.primary
 
@@ -240,47 +218,50 @@ Column {
                 onClicked: daemon && daemon.syncRtc()
             }
         }
-    }
 
-    Rectangle {
-        width: parent.width
-        height: 40
-        radius: Theme.cornerRadius
-        opacity: (daemon?.pinctrlAvailable ?? false) ? 1.0 : 0.5
-        color: allOffMouseArea.containsMouse ? Theme.withAlpha(Theme.error, 0.8) : Theme.error
+        Rectangle {
+            id: allOffButton
+            width: 96
+            height: 28
+            anchors.right: parent.right
+            anchors.verticalCenter: parent.verticalCenter
+            radius: Theme.cornerRadius
+            opacity: (daemon?.pinctrlAvailable ?? false) ? 1.0 : 0.5
+            color: allOffMouseArea.containsMouse ? Theme.withAlpha(Theme.error, 0.8) : Theme.error
 
-        Row {
-            anchors.centerIn: parent
-            spacing: Theme.spacingS
+            Row {
+                anchors.centerIn: parent
+                spacing: Theme.spacingS
 
-            DankIcon {
-                name: "power_settings_new"
-                size: Theme.iconSize - 8
-                color: Theme.surface
+                DankIcon {
+                    name: "power_settings_new"
+                    size: Theme.iconSize - 8
+                    color: Theme.surface
+                }
+
+                StyledText {
+                    text: "All Off"
+                    font.pixelSize: Theme.fontSizeSmall
+                    font.weight: Font.Medium
+                    color: Theme.surface
+                }
             }
 
-            StyledText {
-                text: "All Off"
-                font.pixelSize: Theme.fontSizeSmall
-                font.weight: Font.Medium
-                color: Theme.surface
+            DankRipple {
+                id: allOffRipple
+                rippleColor: Theme.surface
+                cornerRadius: parent.radius
             }
-        }
 
-        DankRipple {
-            id: allOffRipple
-            rippleColor: Theme.surface
-            cornerRadius: parent.radius
-        }
-
-        MouseArea {
-            id: allOffMouseArea
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            enabled: daemon?.pinctrlAvailable ?? false
-            onPressed: mouse => allOffRipple.trigger(mouse.x, mouse.y)
-            onClicked: daemon && daemon.allOff()
+            MouseArea {
+                id: allOffMouseArea
+                anchors.fill: parent
+                hoverEnabled: true
+                cursorShape: Qt.PointingHandCursor
+                enabled: daemon?.pinctrlAvailable ?? false
+                onPressed: mouse => allOffRipple.trigger(mouse.x, mouse.y)
+                onClicked: daemon && daemon.allOff()
+            }
         }
     }
 }
